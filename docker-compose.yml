@@ -1,0 +1,16 @@
+services:
+  devguardian:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - devguardian-data:/app/data
+    environment:
+      - DATABASE_PATH=data/devguardian.db
+      - CHROMA_PATH=data/.chroma
+    restart: unless-stopped
+
+volumes:
+  devguardian-data:

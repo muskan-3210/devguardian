@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+requests
+httpx
+chromadb
+semgrep; sys_platform != "win32"
+python-dotenv
+jinja2
+pandas
+pytest
+pytest-asyncio
+python-multipart
+aiofiles
+openai

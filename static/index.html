@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevGuardian — AI CI/CD Guardian</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* Microsoft 365 light theme — Fluent neutrals + MS logo accent colors */
+  body { background:#faf9f8; color:#201f1e; font-family:"Segoe UI", ui-sans-serif, system-ui, sans-serif; }
+  .card { background:#ffffff; border:1px solid #e1dfdd; border-radius:.5rem; box-shadow:0 1.6px 3.6px rgba(0,0,0,.04); }
+  .tab-active { background:#deecf9; color:#005a9e; font-weight:600; }
+  ::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:#c8c6c4;border-radius:4px}
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .ms-logo { display:grid; grid-template-columns:10px 10px; grid-template-rows:10px 10px; gap:2px; }
+  /* mobile: tab bar scrolls horizontally instead of stacking */
+  .tab-bar { overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .tab-bar::-webkit-scrollbar { display:none; }
+  .tab { white-space:nowrap; flex-shrink:0; }
+  /* charts keep a sane height on every screen */
+  .chart-box { position:relative; height:240px; }
+  @media (max-width:640px){ .chart-box{ height:200px; } }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="border-b border-[#e1dfdd] bg-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-10">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="ms-logo flex-shrink-0">
+      <div style="background:#f25022"></div><div style="background:#7fba00"></div>
+      <div style="background:#00a4ef"></div><div style="background:#ffb900"></div>
+    </div>
+    <div class="min-w-0">
+      <h1 class="font-semibold text-base sm:text-lg leading-tight text-[#201f1e]">DevGuardian</h1>
+      <p class="text-xs text-[#605e5c] hidden sm:block">AI-Powered Intelligent CI/CD Guardian</p>
+    </div>
+  </div>
+  <div id="integrations" class="flex gap-2 text-xs flex-wrap"></div>
+</header>
+
+<nav class="tab-bar px-4 sm:px-6 pt-4 flex gap-2">
+  <button data-tab="overview" class="tab px-4 py-2 rounded text-sm text-[#323130] hover:bg-[#edebe9] tab-active">Trust Overview</button>
+  <button data-tab="live" class="tab px-4 py-2 rounded text-sm text-[#323130] hover:bg-[#edebe9]">Live PR Review</button>
+  <button data-tab="security" class="tab px-4 py-2 rounded text-sm text-[#323130] hover:bg-[#edebe9]">Security</button>
+  <button data-tab="dna" class="tab px-4 py-2 rounded text-sm text-[#323130] hover:bg-[#edebe9]">Codebase DNA</button>
+  <button data-tab="reports" class="tab px-4 py-2 rounded text-sm text-[#323130] hover:bg-[#edebe9]">Team Intelligence</button>
+</nav>
+
+<main class="p-4 sm:p-6 space-y-6">
+
+  <!-- ============ OVERVIEW ============ -->
+  <section id="tab-overview">
+    <div id="dev-cards" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card p-5">
+        <h3 class="font-semibold mb-1">Trust Score Trends — 13 weeks</h3>
+        <p class="text-xs text-[#605e5c] mb-4">DTS is recalculated weekly from 5 explainable signals. Never shown to managers — used only to route AI review depth.</p>
+        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold mb-1">Review Depth Routing</h3>
+        <p class="text-xs text-[#605e5c] mb-4">How each trust band is treated by the AI pipeline.</p>
+        <div class="space-y-3 text-sm">
+          <div class="flex items-center gap-3"><span class="w-20 text-[#107c10] font-mono">80–100</span><span class="px-2 py-0.5 rounded text-xs" style="background:#dff6dd;color:#107c10">SHALLOW</span><span class="text-[#605e5c]">Llama 4 Maverick · quick scan · ~8s</span></div>
+          <div class="flex items-center gap-3"><span class="w-20 text-[#0078d4] font-mono">50–79</span><span class="px-2 py-0.5 rounded text-xs" style="background:#deecf9;color:#005a9e">STANDARD</span><span class="text-[#605e5c]">Devstral-2 123B · full review · ~25s</span></div>
+          <div class="flex items-center gap-3"><span class="w-20 text-[#986f0b] font-mono">20–49</span><span class="px-2 py-0.5 rounded text-xs" style="background:#fff4ce;color:#986f0b">DEEP</span><span class="text-[#605e5c]">Qwen3 Coder 480B · audit + test gen · ~45s</span></div>
+          <div class="flex items-center gap-3"><span class="w-20 text-[#d13438] font-mono">0–19</span><span class="px-2 py-0.5 rounded text-xs" style="background:#fde7e9;color:#d13438">BLOCK</span><span class="text-[#605e5c]">Merge blocked · team lead notified</span></div>
+        </div>
+        <div id="breakdown" class="mt-5 pt-4 border-t border-[#edebe9] text-xs text-[#605e5c]">Click a developer card to see their explainable score breakdown.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIVE REVIEW ============ -->
+  <section id="tab-live" class="hidden">
+    <div class="card p-5 mb-6">
+      <h3 class="font-semibold mb-1">Simulate a Pull Request</h3>
+      <p class="text-xs text-[#605e5c] mb-4">Runs the complete pipeline: trust lookup → depth routing → AI review → DNA check → security scan → test generation.</p>
+      <div class="flex flex-wrap gap-3 items-center">
+        <select id="persona" class="bg-white border border-[#8a8886] rounded px-3 py-2 text-sm w-full sm:w-auto"></select>
+        <select id="scenario" class="bg-white border border-[#8a8886] rounded px-3 py-2 text-sm w-full sm:w-auto">
+          <option value="buggy">Buggy PR (SQL injection + secrets)</option>
+          <option value="clean">Clean PR (tested, typed, logged)</option>
+        </select>
+        <button onclick="simulate()" id="simBtn" class="px-5 py-2 rounded text-white font-semibold text-sm hover:opacity-90 w-full sm:w-auto" style="background:#0078d4">▶ Submit PR</button>
+        <span id="simStatus" class="text-xs text-[#605e5c]"></span>
+      </div>
+    </div>
+    <div id="simResult" class="space-y-4"></div>
+    <div class="card p-5 mt-6">
+      <h3 class="font-semibold mb-3">Recent AI Reviews</h3>
+      <div id="reviewList" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- ============ SECURITY ============ -->
+  <section id="tab-security" class="hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="card p-5"><h3 class="font-semibold mb-3">Findings by Severity</h3><div class="chart-box"><canvas id="sevChart"></canvas></div></div>
+      <div class="card p-5 lg:col-span-2"><h3 class="font-semibold mb-3">Risk Heatmap — Hotspot Files</h3><div id="heatmap" class="space-y-2"></div></div>
+    </div>
+    <div class="card p-5">
+      <h3 class="font-semibold mb-3">Security Findings</h3>
+      <div class="overflow-x-auto"><table class="w-full min-w-[640px] text-sm">
+        <thead><tr class="text-left text-[#605e5c] border-b border-[#edebe9]">
+          <th class="py-2 pr-4">Severity</th><th class="py-2 pr-4">Rule</th><th class="py-2 pr-4">Location</th><th class="py-2 pr-4">Explanation</th><th class="py-2">Status</th>
+        </tr></thead>
+        <tbody id="findingsBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ DNA ============ -->
+  <section id="tab-dna" class="hidden">
+    <div class="card p-5 mb-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 class="font-semibold mb-1">Codebase DNA Fingerprint</h3>
+          <p class="text-xs text-[#605e5c]">Learned from your merged history — violations are measured against <span class="text-[#0078d4] font-semibold">your team's actual conventions</span>, not generic rules.</p>
+        </div>
+        <button onclick="ingestDNA()" class="px-4 py-2 rounded bg-white border border-[#8a8886] text-sm hover:bg-[#f3f2f1]">🧬 Learn DNA from history</button>
+      </div>
+      <div id="dnaProfile" class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+    </div>
+    <div class="card p-5">
+      <h3 class="font-semibold mb-3">Last PR — DNA Violations</h3>
+      <div id="dnaViolations" class="space-y-2 text-sm text-[#605e5c]">Run a simulation in Live PR Review to see violations here.</div>
+    </div>
+  </section>
+
+  <!-- ============ REPORTS ============ -->
+  <section id="tab-reports" class="hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Weekly Team Risk Intelligence</h3>
+          <button onclick="loadReport()" class="px-3 py-1.5 rounded bg-white border border-[#8a8886] text-xs hover:bg-[#f3f2f1]">↻ Generate</button>
+        </div>
+        <div id="reportBody" class="text-sm text-[#323130] whitespace-pre-line leading-relaxed">Click Generate to build the anonymised weekly report.</div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Deployment Risk Gate</h3>
+          <button onclick="loadGate()" class="px-3 py-1.5 rounded bg-white border border-[#8a8886] text-xs hover:bg-[#f3f2f1]">🚦 Evaluate release</button>
+        </div>
+        <div id="gateBody" class="text-sm text-[#323130]">Evaluates avg author trust + unresolved findings → Green / Yellow / Red.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="px-6 py-4 text-center text-xs text-[#a19f9d]">DevGuardian — Microsoft Hackathon Theme 06 · zero-cost stack · NVIDIA NIM free tier · explainable AI only</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const depthStyle = {
+  shallow:  ['#107c10', 'background:#dff6dd;color:#107c10', 'SHALLOW'],
+  standard: ['#0078d4', 'background:#deecf9;color:#005a9e', 'STANDARD'],
+  deep:     ['#986f0b', 'background:#fff4ce;color:#986f0b', 'DEEP'],
+  block:    ['#d13438', 'background:#fde7e9;color:#d13438', 'BLOCK'],
+};
+const sevStyle = {
+  CRITICAL:'background:#fde7e9;color:#d13438', HIGH:'background:#fce8df;color:#ca5010',
+  MEDIUM:'background:#fff4ce;color:#986f0b', LOW:'background:#f3f2f1;color:#605e5c' };
+// Microsoft logo palette for chart series
+const msColors = ['#00a4ef','#7fba00','#ffb900','#f25022','#0078d4'];
+let developers = [], trendChart, sevChart;
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('tab-active'));
+  b.classList.add('tab-active');
+  ['overview','live','security','dna','reports'].forEach(t =>
+    $('#tab-'+t).classList.toggle('hidden', t !== b.dataset.tab));
+});
+
+async function api(path, opts) { const r = await fetch(path, opts); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+
+async function loadDevelopers() {
+  const data = await api('/api/developers');
+  developers = data.developers;
+  $('#integrations').innerHTML = Object.entries(data.integrations).map(([k,v]) =>
+    `<span class="px-2 py-1 rounded border ${v==='live'?'border-[#7fba00] text-[#107c10]':'border-[#c8c6c4] text-[#605e5c]'}">
+       <span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full ${v==='live'?'bg-[#7fba00]':'bg-[#a19f9d]'} mr-1"></span>${k}: ${v}</span>`).join('');
+
+  $('#dev-cards').innerHTML = developers.map((d,i) => {
+    const [txt, badge, label] = depthStyle[d.depth] || depthStyle.standard;
+    return `<div class="card p-4 cursor-pointer hover:shadow-md transition" style="border-top:3px solid ${txt}" onclick="showBreakdown(${i})">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-medium text-sm">${d.display_name}</span>
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${badge}">${label}</span>
+      </div>
+      <div class="text-3xl font-semibold" style="color:${txt}">${d.dts ?? '—'}</div>
+      <div class="text-xs text-[#605e5c] mt-1">${d.role}</div>
+    </div>`;
+  }).join('');
+
+  const sel = $('#persona');
+  sel.innerHTML = developers.map(d =>
+    `<option value="${d.username}">${d.display_name} (DTS ${d.dts} → ${d.depth})</option>`).join('');
+  sel.value = 'yogesh';
+  drawTrend();
+}
+
+function showBreakdown(i) {
+  const d = developers[i];
+  const rows = Object.entries(d.breakdown).filter(([k]) => k!=='note').map(([k,v]) =>
+    `<div class="flex justify-between py-1 border-b border-[#f3f2f1]"><span>${k.replace(/_/g,' ')}</span>
+     <span class="font-mono" style="color:${v<0?'#d13438':'#107c10'}">${v>0&&k!=='baseline'?'+':''}${v}</span></div>`).join('');
+  $('#breakdown').innerHTML = `<p class="font-semibold text-[#201f1e] mb-2">${d.display_name} — explainable score breakdown</p>${rows}
+    <div class="flex justify-between pt-2 font-semibold text-[#201f1e]"><span>DTS</span><span>${d.dts}</span></div>`;
+}
+
+function drawTrend() {
+  const ctx = $('#trendChart');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: (developers[0]?.history||[]).map((_,i)=>`W${i+1}`),
+      datasets: developers.map((d,i)=>({ label:d.display_name, data:d.history.map(h=>h.score),
+        borderColor:msColors[i%5], backgroundColor:'transparent', tension:.35, pointRadius:0, borderWidth:2.5 })) },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#323130',boxWidth:12}}},
+      scales:{ x:{ticks:{color:'#605e5c'},grid:{color:'#edebe9'}},
+               y:{min:0,max:100,ticks:{color:'#605e5c'},grid:{color:'#edebe9'}} } }
+  });
+}
+
+async function simulate() {
+  $('#simBtn').disabled = true;
+  $('#simStatus').textContent = 'Pipeline running: trust lookup → depth routing → AI review…';
+  try {
+    const r = await api(`/api/demo/simulate?persona=${$('#persona').value}&scenario=${$('#scenario').value}`, {method:'POST'});
+    renderResult(r); loadReviews(); loadFindings();
+  } catch(e) { $('#simStatus').textContent = 'Error: '+e.message; }
+  $('#simBtn').disabled = false;
+}
+
+function renderResult(r) {
+  $('#simStatus').textContent = `Completed in ${r.duration_ms} ms`;
+  const [txt, badge, label] = depthStyle[r.depth];
+  const findings = (r.findings||[]).map(f => `
+    <div class="border border-[#edebe9] rounded p-3 bg-[#faf9f8]">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${sevStyle[f.severity]||sevStyle.LOW}">${f.severity}</span>
+        <span class="font-medium">${f.title}</span>
+        <span class="text-xs text-[#a19f9d] font-mono ml-auto">${f.file}:${f.line}</span>
+      </div>
+      <p class="text-xs text-[#605e5c]">${f.detail}</p>
+      <p class="text-xs mt-1" style="color:#107c10">💡 ${f.suggested_fix||''}</p>
+    </div>`).join('');
+  const dna = (r.dna_violations||[]).map(v =>
+    `<div class="border rounded p-3 text-xs" style="border-color:#d6bce8;background:#f9f4fc"><span class="font-semibold" style="color:#5c2e91">${v.type}</span> · ${v.file}<br><span class="text-[#605e5c]">${v.message}</span></div>`).join('');
+  $('#dnaViolations').innerHTML = dna || '<p class="text-[#a19f9d] text-xs">No DNA violations in the last simulated PR.</p>';
+  const tests = Object.keys(r.generated_tests||{});
+  const risk = r.risk ? `<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs mt-3">${
+    ['bug','security','maintainability','deployment'].map(k => {
+      const v = r.risk[k]; const c = v==='High'?'#d13438':v==='Medium'?'#986f0b':'#107c10';
+      return `<div class="border border-[#edebe9] rounded p-2 bg-white"><div class="text-[#605e5c]">${k}</div><div class="font-semibold" style="color:${c}">${v}</div></div>`;
+    }).join('')}</div><p class="text-xs text-[#a19f9d] mt-2">${r.risk.explanation}</p>` : '';
+  $('#simResult').innerHTML = `
+    <div class="card p-5" style="${r.verdict==='block'?'border-top:3px solid #d13438':''}">
+      <div class="flex items-center gap-3 flex-wrap mb-3">
+        <span class="text-sm">Author <b>${r.author}</b></span>
+        <span class="font-mono font-semibold" style="color:${txt}">DTS ${r.dts}</span>
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${badge}">${label} REVIEW</span>
+        ${r.model?`<span class="text-xs text-[#a19f9d] font-mono">${r.model}</span>`:''}
+        <span class="ml-auto px-3 py-1 rounded text-xs font-semibold" style="${r.verdict==='approve'?'background:#dff6dd;color:#107c10':r.verdict==='block'?'background:#fde7e9;color:#d13438':'background:#fff4ce;color:#986f0b'}">${r.verdict.replace('_',' ').toUpperCase()}</span>
+      </div>
+      <p class="text-sm text-[#323130] mb-3">${r.summary}</p>
+      ${findings ? `<h4 class="text-xs uppercase tracking-wide text-[#a19f9d] mb-2">Inline findings (${r.findings.length})</h4><div class="space-y-2">${findings}</div>` : ''}
+      ${dna ? `<h4 class="text-xs uppercase tracking-wide text-[#a19f9d] mt-4 mb-2">DNA violations (${r.dna_violations.length})</h4><div class="space-y-2">${dna}</div>` : ''}
+      ${tests.length ? `<h4 class="text-xs uppercase tracking-wide text-[#a19f9d] mt-4 mb-2">🧪 Generated missing tests</h4><pre class="border border-[#edebe9] bg-[#faf9f8] rounded p-3 text-xs overflow-x-auto">${tests.map(t=>t+'\n'+r.generated_tests[t]).join('\n\n').replace(/</g,'&lt;')}</pre>` : ''}
+      ${risk}
+    </div>`;
+}
+
+async function loadReviews() {
+  const data = await api('/api/reviews');
+  $('#reviewList').innerHTML = data.reviews.map(r => {
+    const [, badge, label] = depthStyle[r.depth] || depthStyle.standard;
+    return `<div class="flex items-center gap-x-3 gap-y-1 flex-wrap border-b border-[#f3f2f1] py-2">
+      <span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${badge}">${label}</span>
+      <span class="truncate max-w-[55vw] sm:max-w-none">${r.title||'—'}</span><span class="text-[#a19f9d] text-xs">${r.author||''}</span>
+      <span class="sm:ml-auto text-xs text-[#a19f9d] w-full sm:w-auto">${r.findings.length} findings · ${r.duration_ms} ms · ${r.verdict}</span>
+    </div>`;
+  }).join('') || '<p class="text-[#a19f9d] text-xs">No reviews yet.</p>';
+}
+
+async function loadFindings() {
+  const data = await api('/api/findings');
+  $('#findingsBody').innerHTML = data.findings.map(f => `
+    <tr class="border-b border-[#f3f2f1]">
+      <td class="py-2 pr-4"><span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${sevStyle[f.severity]||sevStyle.LOW}">${f.severity}</span></td>
+      <td class="py-2 pr-4 font-mono text-xs">${f.rule_id}</td>
+      <td class="py-2 pr-4 font-mono text-xs">${f.file}:${f.line}</td>
+      <td class="py-2 pr-4 text-xs text-[#605e5c] max-w-md">${f.explanation||f.message}</td>
+      <td class="py-2 text-xs">${f.resolved?'<span style="color:#107c10">resolved</span>':'<span style="color:#986f0b">open</span>'}</td>
+    </tr>`).join('');
+  const counts = {CRITICAL:0,HIGH:0,MEDIUM:0,LOW:0};
+  data.findings.forEach(f => counts[f.severity] = (counts[f.severity]||0)+1);
+  if (sevChart) sevChart.destroy();
+  sevChart = new Chart($('#sevChart'), { type:'doughnut',
+    data:{ labels:Object.keys(counts), datasets:[{ data:Object.values(counts),
+      backgroundColor:['#d13438','#f25022','#ffb900','#c8c6c4'], borderColor:'#ffffff' }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#323130',boxWidth:12}}} } });
+  const byFile = {};
+  data.findings.forEach(f => byFile[f.file] = (byFile[f.file]||0)+1);
+  const max = Math.max(1, ...Object.values(byFile));
+  $('#heatmap').innerHTML = Object.entries(byFile).sort((a,b)=>b[1]-a[1]).map(([file,n]) => `
+    <div class="flex items-center gap-3 text-xs">
+      <span class="font-mono w-28 sm:w-48 truncate">${file}</span>
+      <div class="flex-1 bg-[#edebe9] rounded-full h-3 overflow-hidden">
+        <div class="h-3 rounded-full" style="width:${n/max*100}%;background:linear-gradient(to right,#ffb900,#f25022)"></div>
+      </div><span class="text-[#605e5c] w-6 text-right">${n}</span>
+    </div>`).join('') || '<p class="text-[#a19f9d] text-xs">No findings yet.</p>';
+}
+
+async function ingestDNA() {
+  $('#dnaProfile').innerHTML = '<p class="text-xs text-[#605e5c] col-span-4">Learning codebase DNA…</p>';
+  await api('/api/dna/ingest', {method:'POST'});
+  loadDNA();
+}
+async function loadDNA() {
+  try {
+    const p = await api('/api/dna/profile');
+    const pretty = { snake_case_ratio:'snake_case naming', camel_case_ratio:'camelCase naming',
+      type_hint_ratio:'type hints', docstring_ratio:'docstrings', uses_logging:'logging module',
+      uses_print_debug:'print() debugging', bare_except:'bare except', specific_except:'specific exceptions' };
+    $('#dnaProfile').innerHTML = Object.entries(p.traits).map(([k,v]) => `
+      <div class="border border-[#edebe9] rounded p-3 text-center bg-[#faf9f8]">
+        <div class="text-2xl font-semibold" style="color:#0078d4">${Math.round(v*100)}%</div>
+        <div class="text-xs text-[#605e5c] mt-1">${pretty[k]||k}</div>
+      </div>`).join('') +
+      `<div class="border border-[#edebe9] rounded p-3 text-center col-span-2 md:col-span-4 text-xs text-[#a19f9d]">${p.chunk_count} code chunks fingerprinted in ChromaDB · updated ${p.updated_at.slice(0,16).replace('T',' ')}</div>`;
+  } catch { $('#dnaProfile').innerHTML = '<p class="text-xs text-[#a19f9d] col-span-4">No DNA profile yet — click "Learn DNA from history".</p>'; }
+}
+
+async function loadReport() {
+  $('#reportBody').textContent = 'Generating…';
+  const r = await api('/api/report');
+  $('#reportBody').innerHTML = r.narrative.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,'<code style="color:#0078d4">$1</code>');
+}
+
+async function loadGate() {
+  $('#gateBody').textContent = 'Evaluating…';
+  const g = await api('/api/deploy-gate');
+  const c = g.status==='GREEN'?'#107c10':g.status==='YELLOW'?'#986f0b':'#d13438';
+  const bg = g.status==='GREEN'?'#dff6dd':g.status==='YELLOW'?'#fff4ce':'#fde7e9';
+  $('#gateBody').innerHTML = `
+    <div class="rounded p-4 text-center mb-3" style="background:${bg}"><span class="text-3xl font-black" style="color:${c}">${g.status}</span></div>
+    <p class="mb-2">${g.summary}</p>
+    <ul class="text-xs text-[#605e5c] list-disc ml-5">${g.reasons.map(r=>`<li>${r}</li>`).join('')}</ul>
+    <div class="grid grid-cols-3 gap-2 text-center text-xs mt-3">
+      <div class="border border-[#edebe9] rounded p-2"><div class="text-[#605e5c]">avg DTS</div><div class="font-semibold">${g.avg_dts??'—'}</div></div>
+      <div class="border border-[#edebe9] rounded p-2"><div class="text-[#605e5c]">min DTS</div><div class="font-semibold">${g.min_dts??'—'}</div></div>
+      <div class="border border-[#edebe9] rounded p-2"><div class="text-[#605e5c]">authors</div><div class="font-semibold">${g.authors_evaluated}</div></div>
+    </div>`;
+}
+
+loadDevelopers(); loadReviews(); loadFindings(); loadDNA();
+</script>
+</body>
+</html>

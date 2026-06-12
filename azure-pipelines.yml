@@ -1,0 +1,44 @@
+# Azure DevOps pipeline — test, scan, and (optionally) gate a release with DevGuardian
+trigger:
+  branches:
+    include: [main, master]
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Test
+    jobs:
+      - job: pytest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+          - script: pip install -r requirements.txt
+            displayName: Install dependencies
+          - script: pytest -v
+            displayName: Run test suite
+          - script: python seeder.py
+            displayName: Verify demo seed
+
+  - stage: SecurityScan
+    dependsOn: Test
+    jobs:
+      - job: semgrep
+        steps:
+          - script: pip install semgrep && semgrep --config=auto --error --exclude=demo_fixtures .
+            displayName: Semgrep static analysis
+
+  - stage: DeployGate
+    dependsOn: SecurityScan
+    condition: succeeded()
+    jobs:
+      - job: trust_gate
+        steps:
+          # Calls a running DevGuardian instance; fails the pipeline on a RED gate.
+          - script: |
+              STATUS=$(curl -fsS "$(DEVGUARDIAN_URL)/api/deploy-gate" | python -c "import sys,json;print(json.load(sys.stdin)['status'])")
+              echo "DevGuardian deploy gate: $STATUS"
+              [ "$STATUS" != "RED" ] || exit 1
+            displayName: DevGuardian trust gate
+            condition: ne(variables['DEVGUARDIAN_URL'], '')

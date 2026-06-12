@@ -1,0 +1,40 @@
+diff --git a/app/auth.py b/app/auth.py
+index 1234567..89abcde 100644
+--- a/app/auth.py
++++ b/app/auth.py
+@@ -1,6 +1,28 @@
+ import sqlite3
++import hashlib
++import requests
+
++API_SECRET = "sk-prod-9f8e7d6c5b4a3210fedcba98"
++
++def loginUser(userName, userPassword):
++    conn = sqlite3.connect("users.db")
++    cursor = conn.cursor()
++    query = "SELECT * FROM users WHERE name = '" + userName + "' AND pw = '" + userPassword + "'"
++    cursor.execute(query)
++    return cursor.fetchone()
++
++def hashPassword(pw):
++    return hashlib.md5(pw.encode()).hexdigest()
++
++def syncProfile(userId):
++    try:
++        resp = requests.get("https://internal-api/profile/" + str(userId), verify=False)
++        print("synced", resp.status_code)
++        return resp.json()
++    except:
++        pass
+diff --git a/app/utils.py b/app/utils.py
+index 2345678..9abcdef 100644
+--- a/app/utils.py
++++ b/app/utils.py
+@@ -1,2 +1,8 @@
+
++def runCommand(cmd):
++    import os
++    os.system("sh -c " + cmd)
++
++def parseConfig(raw):
++    return eval(raw)

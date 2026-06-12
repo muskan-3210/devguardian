@@ -1,0 +1,41 @@
+diff --git a/app/metrics.py b/app/metrics.py
+index 1111111..2222222 100644
+--- a/app/metrics.py
++++ b/app/metrics.py
+@@ -1,4 +1,22 @@
+ import logging
++from datetime import datetime, timezone
+
+ logger = logging.getLogger(__name__)
++
++
++def calculate_uptime_ratio(total_seconds: int, downtime_seconds: int) -> float:
++    """Return the uptime ratio for a monitoring window."""
++    if total_seconds <= 0:
++        raise ValueError("total_seconds must be positive")
++    ratio = (total_seconds - downtime_seconds) / total_seconds
++    logger.debug("uptime ratio computed: %.4f", ratio)
++    return max(0.0, min(1.0, ratio))
++
++
++def format_report_timestamp(dt: datetime | None = None) -> str:
++    """ISO-8601 UTC timestamp used in all uptime reports."""
++    value = dt or datetime.now(timezone.utc)
++    return value.astimezone(timezone.utc).isoformat()
+diff --git a/tests/test_metrics.py b/tests/test_metrics.py
+index 3333333..4444444 100644
+--- a/tests/test_metrics.py
++++ b/tests/test_metrics.py
+@@ -1,2 +1,14 @@
+ import pytest
++
++from app.metrics import calculate_uptime_ratio
++
++
++def test_calculate_uptime_ratio_happy_path():
++    assert calculate_uptime_ratio(100, 10) == pytest.approx(0.9)
++
++
++def test_calculate_uptime_ratio_rejects_zero_window():
++    with pytest.raises(ValueError):
++        calculate_uptime_ratio(0, 0)
