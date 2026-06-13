@@ -1,7 +1,10 @@
 # 🛡️ DevGuardian
 
-**AI-Powered Intelligent CI/CD Guardian for Azure DevOps / GitHub**
-*Microsoft Hackathon — Theme 06: Production Function · Total cost: ₹0*
+**AI-Powered Intelligent CI/CD Guardian for GitHub**
+*Microsoft Hackathon — Theme 06: AI-Powered Production Function: Reinventing Work · Total cost: ₹0*
+
+**▶ Demo video:** https://youtu.be/oSdFeM6pjW8  ·  **🌐 Live demo:** https://devguardian.onrender.com/dashboard
+**👥 Team The Hallucinato** — Muskan Sirse & Yogesh Gurjar
 
 Most teams build *PR → AI review → suggestions*. DevGuardian is different: it is a **stateful quality gate** that learns **who** is submitting code and **what your codebase normally looks like**, then adapts how aggressively it reviews each pull request.
 

@@ -1,0 +1,62 @@
+DevGuardian — Overview Video Narration (11 scenes, in order)
+Team: The Hallucinato · Theme 06 — AI-Powered Production Function: Reinventing Work
+Total runtime ~3:30 · Paste each block into that scene's "Add your script" in Google Vids.
+
+NOTE: In Vids, make sure the scene ORDER is:
+Title -> Problem -> Trust -> Live -> GitHub PR -> GitHub comment -> Discord -> Security -> DNA -> Team Intel -> Close
+(If the "Reviews are slow..." Problem card is near the end, drag it to position 2.)
+
+================================================================
+SCENE 1  —  Title        [image: 00_title_hook]   ~0:00–0:15
+================================================================
+Every team ships code through CI/CD — but the moment between "ready to merge" and "safe to deploy" is still guarded by tired humans. Meet DevGuardian: an AI guardian that makes that moment intelligent.
+
+================================================================
+SCENE 2  —  The Problem  [image: 09_problem]       ~0:15–0:42
+================================================================
+Today, pull requests wait two to three days for review. Every PR gets the same shallow check — whether it's a senior engineer's one-line fix or a newcomer's authentication rewrite. So trusted developers are slowed down, while risky changes slip through. Security bugs reach production, and generic AI reviewers flag "best practice" instead of your team's standards.
+
+================================================================
+SCENE 3  —  Trust Overview   [image: 01_trust_overview]   ~0:42–1:08
+================================================================
+DevGuardian's first idea is a Developer Trust Score — learned from each developer's real history, and used only to route how deeply the AI reviews each PR. A trusted developer gets a fast scan in seconds. A lower-trust author gets a deep audit. A score below twenty blocks the merge. Same pipeline — intelligent depth.
+
+================================================================
+SCENE 4  —  Live PR Review   [image: 02_live_pr_review]   ~1:08–1:26
+================================================================
+When a low-trust author opens a buggy pull request, DevGuardian runs the full pipeline — trust lookup, AI review, DNA check, security scan, and test generation — and returns a verdict in under a minute.
+
+================================================================
+SCENE 5  —  GitHub PR     [image: 03_github_pr]    ~1:26–1:40
+================================================================
+And here's the proof on GitHub itself. The moment the pull request opened, DevGuardian reviewed it automatically — posting as the reviewer, requesting changes, and setting a failing status check.
+
+================================================================
+SCENE 6  —  GitHub comment   [image: 04_github_inline]   ~1:40–1:56
+================================================================
+It posts comments right on the code — like this one flagging a hardcoded credential, with a plain-English explanation and a concrete fix. So with branch protection on, risky code can't quietly merge.
+
+================================================================
+SCENE 7  —  Discord Alerts   [image: 05_discord_alerts]   ~1:56–2:14
+================================================================
+At the same time, the team is notified instantly in Discord. Every high-risk pull request and every red deployment gate is posted automatically — with the author, the findings, and the severity — so nothing slips by unnoticed.
+
+================================================================
+SCENE 8  —  Security      [image: 06_security]     ~2:14–2:36
+================================================================
+Every finding is ranked by severity, with a heatmap of the riskiest files and a plain-English fix. And because DevGuardian guards many repositories, each finding is tagged with its repo and pull request — and you can filter by repository.
+
+================================================================
+SCENE 9  —  Codebase DNA   [image: 07_codebase_dna]   ~2:36–2:55
+================================================================
+This is what makes it different — Codebase DNA. DevGuardian learns your team's actual conventions from your merged history: naming style, type hints, docstrings, logging. So it flags violations of your standards, not generic ones — and every judgement is explainable.
+
+================================================================
+SCENE 10 —  Team Intelligence   [image: 08_team_intelligence]   ~2:55–3:15
+================================================================
+At the team level, DevGuardian writes a weekly, anonymised risk report with actionable recommendations — and a deployment gate that turns red when unresolved critical issues or low-trust authors put a release at risk. Your final automated check before deploy.
+
+================================================================
+SCENE 11 —  Close        [image: 10_close]         ~3:15–3:30
+================================================================
+DevGuardian runs as a single service on NVIDIA NIM models — a zero-cost, fully explainable stack, deployed live. Built for the Microsoft Hackathon by team The Hallucinato. Intelligent reviews. Safer deploys. Automatically.

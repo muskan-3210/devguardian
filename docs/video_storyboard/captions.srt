@@ -1,0 +1,43 @@
+1
+00:00:00,000 --> 00:00:15,000
+DevGuardian — AI-Powered Intelligent CI/CD Guardian
+
+2
+00:00:15,000 --> 00:00:42,000
+The problem: slow, one-size-fits-all reviews — and risky code still reaches production
+
+3
+00:00:42,000 --> 00:01:08,000
+Developer Trust Score routes review depth: shallow → standard → deep → block
+
+4
+00:01:08,000 --> 00:01:26,000
+Adaptive AI review — full pipeline, verdict in under a minute
+
+5
+00:01:26,000 --> 00:01:40,000
+Auto-reviews the real PR — requests changes + failing status check
+
+6
+00:01:40,000 --> 00:01:56,000
+Inline comments on the code, each with a concrete fix
+
+7
+00:01:56,000 --> 00:02:14,000
+Instant Discord alerts — high-risk PRs + Red deployment gate
+
+8
+00:02:14,000 --> 00:02:36,000
+Security findings — severity, hotspot files, per-repo, with AI fixes
+
+9
+00:02:36,000 --> 00:02:55,000
+Codebase DNA — learns your team's real conventions, not generic rules
+
+10
+00:02:55,000 --> 00:03:15,000
+Team Intelligence — weekly risk report + Red/Yellow/Green deploy gate
+
+11
+00:03:15,000 --> 00:03:30,000
+The Hallucinato · Theme 06 — AI-Powered Production Function: Reinventing Work
