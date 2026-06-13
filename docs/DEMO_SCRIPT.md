@@ -1,6 +1,6 @@
 # DevGuardian — Demo Scripts
 
-> Pre-demo checklist: `python seeder.py` run, server up, dashboard open on the **Trust Overview** tab, DNA ingested (DNA tab → "Learn DNA from history"), one dry run completed. Record a 1080p backup video in advance.
+> Pre-demo checklist: `python -m app.seeder` run, server up, dashboard open on the **Trust Overview** tab, DNA ingested (DNA tab → "Learn DNA from history"), one dry run completed. Record a 1080p backup video in advance.
 
 ---
 

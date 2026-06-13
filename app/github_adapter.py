@@ -5,6 +5,7 @@ With no GITHUB_TOKEN configured the adapter runs in mock mode: diffs come
 from the bundled demo fixtures and comment posting is logged, so the full
 pipeline is demo-able without a real repository.
 """
+import base64
 import hashlib
 import hmac
 import logging
@@ -12,12 +13,12 @@ from pathlib import Path
 
 import requests
 
-import config
+from . import config
 
 logger = logging.getLogger("devguardian.github")
 
 API = "https://api.github.com"
-FIXTURES = Path(__file__).parent / "demo_fixtures"
+FIXTURES = Path(__file__).parent.parent / "demo_fixtures"
 
 
 def _headers(token: str | None = None) -> dict:
@@ -106,6 +107,41 @@ def set_commit_status(owner: str, repo: str, sha: str, state: str,
               "context": "devguardian/trust-gate"},
         timeout=30,
     ).raise_for_status()
+
+
+def get_repo_python_files(owner: str, repo: str, ref: str | None = None,
+                          max_files: int = 40, max_bytes: int = 80_000) -> dict[str, str]:
+    """Fetch up to `max_files` Python source files from a repo branch.
+
+    Used to learn a real repository's DNA from `ref` (a branch/tag/SHA), or the
+    default branch when ref is None. Skips oversized blobs and is bounded so a
+    large repo can't blow the API budget. Returns {path: source}.
+    """
+    branch = ref
+    if not branch:
+        meta = requests.get(f"{API}/repos/{owner}/{repo}", headers=_headers(), timeout=30)
+        meta.raise_for_status()
+        branch = meta.json().get("default_branch", "main")
+
+    tree = requests.get(
+        f"{API}/repos/{owner}/{repo}/git/trees/{branch}",
+        headers=_headers(), params={"recursive": "1"}, timeout=30)
+    tree.raise_for_status()
+    blobs = [t for t in tree.json().get("tree", [])
+             if t.get("type") == "blob" and t["path"].endswith(".py")
+             and 0 < t.get("size", 0) <= max_bytes][:max_files]
+
+    files: dict[str, str] = {}
+    for blob in blobs:
+        resp = requests.get(f"{API}/repos/{owner}/{repo}/git/blobs/{blob['sha']}",
+                            headers=_headers(), timeout=30)
+        if resp.status_code != 200:
+            continue
+        data = resp.json()
+        if data.get("encoding") == "base64":
+            files[blob["path"]] = base64.b64decode(data["content"]).decode("utf-8", "replace")
+    logger.info("Fetched %s Python file(s) from %s/%s for DNA ingest", len(files), owner, repo)
+    return files
 
 
 def parse_pr_event(payload: dict) -> dict | None:

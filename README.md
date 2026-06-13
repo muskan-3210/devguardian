@@ -42,8 +42,8 @@ Six months of merged code is embedded into **ChromaDB** (`nvidia/nv-embedqa-e5-v
 
 ```bash
 pip install -r requirements.txt
-python seeder.py                 # 4 demo developers + 13 weeks of DTS history
-uvicorn main:app --reload        # http://localhost:8000/dashboard
+python -m app.seeder             # 4 demo developers + 13 weeks of DTS history
+uvicorn app.main:app --reload    # http://localhost:8000/dashboard
 ```
 
 Every integration auto-degrades to **mock mode** when its key is missing, so the full pipeline — trust routing, review, DNA check, security scan, test generation, deploy gate — is demo-able completely offline. Add real keys later by copying `.env.example` → `.env`.
@@ -52,10 +52,42 @@ Try the pipeline from the dashboard (**Live PR Review** tab) or via API:
 
 ```bash
 curl -X POST "http://localhost:8000/api/dna/ingest"
-curl -X POST "http://localhost:8000/api/demo/simulate?persona=yogesh&scenario=buggy"
-curl -X POST "http://localhost:8000/api/demo/simulate?persona=muskan&scenario=clean"
+curl -X POST "http://localhost:8000/api/demo/simulate?persona=yogeshgurjar119&scenario=buggy"  # deep
+curl -X POST "http://localhost:8000/api/demo/simulate?persona=muskan-3210&scenario=clean"      # shallow
 curl       "http://localhost:8000/api/deploy-gate"
 ```
+
+> Seeded personas: `muskan-3210` (shallow), `alex-rivera` (standard), `yogeshgurjar119` (deep), `sam-iqbal` (block). The usernames match real GitHub logins so live PR authors resolve to the intended trust band; rename them in `app/seeder.py` for your own accounts.
+
+## Project structure
+
+```
+devguardian/
+├── app/                      # application package (all Python source)
+│   ├── main.py               # FastAPI orchestrator + REST API + webhook
+│   ├── config.py             # env + mock-mode flags + model routing
+│   ├── database.py           # SQLite schema + connection helper
+│   ├── dts_engine.py         # Developer Trust Score + depth routing
+│   ├── nim_client.py         # NVIDIA NIM client (adaptive review, retries)
+│   ├── dna_engine.py         # Codebase DNA — ChromaDB + trait extraction
+│   ├── security_scanner.py   # Semgrep / built-in OWASP rule pack
+│   ├── test_generator.py     # AST test-gap detection + AI test generation
+│   ├── github_adapter.py     # webhook verify · diff · comments · status
+│   ├── notifier.py           # Discord / Teams alerts
+│   ├── risk_reporter.py      # weekly anonymised team risk report
+│   ├── deploy_gate.py        # Red/Yellow/Green release gate
+│   └── seeder.py             # demo data (run: python -m app.seeder)
+├── static/index.html         # Tailwind SPA dashboard
+├── demo_fixtures/            # sample diffs + commit history for DNA
+├── tests/                    # pytest suite (28 tests)
+├── docs/                     # architecture.png · user_flow.png · guides
+├── Dockerfile · docker-compose.yml · entrypoint.sh
+├── .github/workflows/ci.yml · azure-pipelines.yml
+└── requirements.txt · .env.example
+```
+
+Run: `python -m app.seeder` then `uvicorn app.main:app --reload`.
+Tests / local Semgrep: `pip install -r requirements-dev.txt && pytest -q`.
 
 ## Architecture (3 layers)
 

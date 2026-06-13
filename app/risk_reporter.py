@@ -10,9 +10,9 @@ import logging
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-import nim_client
-import notifier
-from database import get_db
+from . import nim_client
+from . import notifier
+from .database import get_db
 
 logger = logging.getLogger("devguardian.risk")
 
@@ -88,6 +88,8 @@ def generate_report(days: int = 7, post: bool = True) -> dict:
         "data. Never name individuals. End with 2 actionable recommendations.\n\n"
         + json.dumps(agg, indent=2)
     ) or _mock_narrative(agg)
+    logger.info("Weekly risk report: %d finding(s), %d review(s) over %d day(s); posted=%s",
+                agg["findings_total"], agg["reviews_total"], days, post)
     if post:
         notifier.send_alert("📊 Weekly Team Risk Intelligence", narrative, "info")
     return {"aggregates": agg, "narrative": narrative}

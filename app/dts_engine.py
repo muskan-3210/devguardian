@@ -16,8 +16,8 @@ Formula (from the project brief):
 """
 import json
 
-import config
-from database import get_db, now
+from . import config
+from .database import get_db, now
 
 BASELINE = 70
 
@@ -130,21 +130,17 @@ def all_developers_with_scores() -> list[dict]:
         out = []
         for dev in devs:
             history = db.execute(
-                "SELECT score, depth, calculated_at FROM trust_scores "
+                "SELECT score, depth, breakdown_json, calculated_at FROM trust_scores "
                 "WHERE developer_id = ? ORDER BY calculated_at DESC LIMIT 12",
                 (dev["id"],),
             ).fetchall()
             latest = history[0] if history else None
-            breakdown_row = db.execute(
-                "SELECT breakdown_json FROM trust_scores WHERE developer_id = ? "
-                "ORDER BY calculated_at DESC LIMIT 1", (dev["id"],),
-            ).fetchone()
             out.append({
                 "id": dev["id"], "username": dev["username"],
                 "display_name": dev["display_name"], "role": dev["role"],
                 "dts": latest["score"] if latest else None,
                 "depth": latest["depth"] if latest else None,
-                "breakdown": json.loads(breakdown_row["breakdown_json"]) if breakdown_row else {},
+                "breakdown": json.loads(latest["breakdown_json"]) if latest else {},
                 "history": [
                     {"score": h["score"], "at": h["calculated_at"]}
                     for h in reversed(history)

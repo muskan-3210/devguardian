@@ -1,5 +1,9 @@
 .env
-CLAUDE.md
+.env.*
+!.env.example
+.git/
+.gitignore
+.chroma/
 *.db
 *.db-shm
 *.db-wal
@@ -7,11 +11,12 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-.chroma/
 .pytest_cache/
 *.log
 .DS_Store
 .claude
 _audit_report/
-_deck/
-node_modules/
+tests/
+docs/
+*.pdf
+CLAUDE.md

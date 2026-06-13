@@ -1,0 +1,8 @@
+# Development & CI dependencies — installs runtime deps plus the test/scan tooling.
+#   pip install -r requirements-dev.txt
+-r requirements.txt
+pytest>=8.0
+pytest-asyncio>=0.23
+# Real Semgrep for local/CI scans; the app falls back to a built-in OWASP rule
+# pack when it is absent (e.g. on the lean deploy image or native Windows).
+semgrep; sys_platform != "win32"

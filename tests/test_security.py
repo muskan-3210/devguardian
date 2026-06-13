@@ -1,6 +1,5 @@
 """Unit tests for the security scanner (Module 3)."""
-import config
-import security_scanner
+from app import config, security_scanner
 
 BUGGY_DIFF = """diff --git a/app/db.py b/app/db.py
 --- a/app/db.py
@@ -31,8 +30,9 @@ def test_builtin_rules_catch_sql_injection_and_secret():
 
 
 def test_scan_diff_persists_findings(tmp_path, monkeypatch):
-    import database
+    from app import database
     monkeypatch.setattr(config, "DATABASE_PATH", str(tmp_path / "t.db"))
+    monkeypatch.setattr(config, "MOCK_NIM", True)  # offline, deterministic explanations
     database.init_db()
     findings = security_scanner.scan_diff(BUGGY_DIFF)
     assert findings, "expected findings from the buggy diff"

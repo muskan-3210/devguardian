@@ -1,7 +1,7 @@
 """Unit tests for the DTS formula and depth routing (Module 1)."""
 import pytest
 
-import dts_engine
+from app import dts_engine
 
 
 def test_neutral_baseline_routes_standard():
@@ -57,7 +57,7 @@ def test_depth_boundaries(dts, expected):
 
 
 def test_unknown_developer_gets_neutral_default(tmp_path, monkeypatch):
-    import config, database
+    from app import config, database
     monkeypatch.setattr(config, "DATABASE_PATH", str(tmp_path / "t.db"))
     database.init_db()
     trust = dts_engine.get_or_default_dts("brand-new-dev")

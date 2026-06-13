@@ -12,10 +12,11 @@ import re
 import shutil
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-import nim_client
-from database import get_db, now
+from . import nim_client
+from .database import get_db, now
 
 logger = logging.getLogger("devguardian.security")
 
@@ -115,8 +116,15 @@ def scan_diff(diff: str, pr_id: int | None = None,
         logger.info("Semgrep unavailable — using built-in rule pack")
         findings = _run_builtin(files)
 
-    for f in findings:
-        f["explanation"] = nim_client.explain_finding(f["rule_id"], f["message"], f["code"])
+    # Explanations are independent network calls — run them concurrently so a
+    # scan with N findings costs ~1 call's latency instead of N sequential ones.
+    if findings:
+        with ThreadPoolExecutor(max_workers=min(3, len(findings))) as pool:
+            explanations = pool.map(
+                lambda f: nim_client.explain_finding(f["rule_id"], f["message"], f["code"]),
+                findings)
+            for f, explanation in zip(findings, explanations):
+                f["explanation"] = explanation
 
     with get_db() as db:
         for f in findings:

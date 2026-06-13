@@ -6,8 +6,9 @@ test, then Qwen3 Coder (via NIM) generates the missing pytest tests.
 import ast
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 
-import nim_client
+from . import nim_client
 
 logger = logging.getLogger("devguardian.testgen")
 
@@ -60,11 +61,17 @@ def generate_missing_tests(files: dict[str, str]) -> dict[str, str]:
 
     Returns {test_file_path: test_source}.
     """
-    generated = {}
-    for fname, funcs in find_untested(files).items():
+    gaps = find_untested(files)
+    if not gaps:
+        return {}
+
+    def _generate(item: tuple[str, list[dict]]) -> tuple[str, str]:
+        fname, funcs = item
         names = [f["name"] for f in funcs]
         logger.info("Generating tests for %s: %s", fname, names)
-        test_source = nim_client.generate_tests(files[fname], names)
         test_name = "tests/test_" + fname.replace("/", "_").removesuffix(".py") + ".py"
-        generated[test_name] = test_source
-    return generated
+        return test_name, nim_client.generate_tests(files[fname], names)
+
+    # One model call per source file — run them concurrently across files.
+    with ThreadPoolExecutor(max_workers=min(4, len(gaps))) as pool:
+        return dict(pool.map(_generate, gaps.items()))

@@ -4,8 +4,8 @@
 
 ```bash
 pip install -r requirements.txt
-python seeder.py
-uvicorn main:app --reload
+python -m app.seeder
+uvicorn app.main:app --reload
 # dashboard: http://localhost:8000/dashboard
 ```
 
@@ -19,7 +19,6 @@ Copy `.env.example` → `.env` and fill:
 |---|---|
 | `NVIDIA_API_KEY` | build.nvidia.com → Settings → API Keys (free, phone OTP) |
 | `GITHUB_TOKEN` | GitHub → Settings → Developer settings → PAT (classic) — scopes `repo`, `read:user`, `write:discussion` |
-| `GITHUB_TOKEN_YOGESH` | same, from the second demo account |
 | `GITHUB_WEBHOOK_SECRET` | any random string — must match the repo webhook setting |
 | `GITHUB_REPO_OWNER` / `GITHUB_REPO_NAME` | your demo repo |
 | `TEAMS_WEBHOOK_URL` | Discord channel → Integrations → Webhooks → Copy URL |
@@ -43,14 +42,23 @@ GitHub repo → Settings → Webhooks → Add webhook:
 docker compose up --build
 ```
 
-Data (SQLite + ChromaDB) persists in the `devguardian-data` volume. Image seeds demo data at build time and exposes a healthcheck on `/health`.
+Data (SQLite + ChromaDB) persists in the `devguardian-data` volume. The container **seeds demo data on first start** (via `entrypoint.sh`, after the volume mounts) and exposes a healthcheck on `/health`.
 
-## 5. Railway / Render (free tier)
+## 5. Render (Docker, free tier)
+
+A `render.yaml` blueprint is included, so the service is one-click:
 
 1. Push the repo to GitHub.
-2. Railway → New Project → Deploy from GitHub repo (Dockerfile detected automatically).
-3. Add the `.env` variables in the service settings.
-4. Use the generated public URL as the GitHub webhook target — no ngrok needed.
+2. Render → **New → Blueprint** → pick the repo (it reads `render.yaml`), **or** New → Web Service → Docker.
+3. In the service's **Environment**, set the secrets you want live (`NVIDIA_API_KEY`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `TEAMS_WEBHOOK_URL`, `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`). Any left unset stays in **mock mode** — the app still boots.
+4. Render injects `$PORT`; `entrypoint.sh` binds `0.0.0.0:$PORT` and seeds on first start. Health check path is `/health`.
+5. Use the generated `https://<app>.onrender.com/webhook` as the GitHub webhook target — **no ngrok needed**.
+
+**Notes for Render:**
+- **Memory:** ChromaDB pulls in `onnxruntime`; the free 512 MB instance works but cold-starts slowly. The `starter` plan is smoother for a live demo.
+- **Persistence:** free instances have ephemeral disk, so the DB + DNA store **re-seed on each restart** (fine for a demo). For durable data, switch to a paid plan and attach the disk block shown (commented) in `render.yaml`, setting `DATABASE_PATH=/data/devguardian.db` and `CHROMA_PATH=/data/.chroma`.
+- **Build size/time:** `semgrep` is the heaviest dependency. The scanner falls back to a built-in OWASP rule pack when Semgrep is absent, so you can drop `semgrep` from `requirements.txt` for a much faster, lighter Render build with no loss of demo functionality.
+- **Secrets:** `.env` is git-ignored and is **not** deployed; Render reads the dashboard env vars via `os.getenv` (the app calls `load_dotenv` only if a local `.env` exists).
 
 ## 6. Operations
 

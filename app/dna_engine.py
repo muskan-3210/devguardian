@@ -20,8 +20,8 @@ import re
 
 import chromadb
 
-import config
-from database import get_db, now
+from . import config
+from .database import get_db, now
 
 logger = logging.getLogger("devguardian.dna")
 
@@ -37,7 +37,7 @@ def _local_embed(text: str) -> list[float]:
     vec = [0.0] * EMBED_DIM
     tokens = re.findall(r"[A-Za-z_]\w*|[^\sA-Za-z0-9]", text)
     for tok in tokens:
-        h = int(hashlib.md5(tok.encode()).hexdigest(), 16)
+        h = int(hashlib.md5(tok.encode(), usedforsecurity=False).hexdigest(), 16)
         vec[h % EMBED_DIM] += 1.0
     norm = math.sqrt(sum(v * v for v in vec)) or 1.0
     return [v / norm for v in vec]
@@ -74,7 +74,8 @@ def extract_traits(code: str) -> dict:
         "type_hint_ratio": round(
             len(re.findall(r"def\s+\w+\([^)]*:\s*\w", code)) / defs, 2) if defs else 0.0,
         "docstring_ratio": round(
-            len(re.findall(r'def\s+\w+[^:]*:\s*\n\s+("""|\'\'\')', code)) / defs, 2) if defs else 0.0,
+            len(re.findall(r'def\s+\w+\([^)]*\)\s*(?:->[^:]+)?:\s*\n\s*("""|\'\'\')', code)) / defs, 2)
+            if defs else 0.0,
         "uses_logging": bool(re.search(r"\blogging\b|\blogger\.", code)),
         "uses_print_debug": bool(re.search(r"\bprint\(", code)),
         "bare_except": bool(re.search(r"except\s*:", code)),
@@ -126,21 +127,24 @@ def ingest_history(repo: str, files: dict[str, str]) -> dict:
     for fname, content in files.items():
         for i, chunk in enumerate(chunk_code(content)):
             all_chunks.append(chunk)
-            ids.append(hashlib.md5(f"{repo}:{fname}:{i}:{chunk[:80]}".encode()).hexdigest())
+            ids.append(hashlib.md5(
+                f"{repo}:{fname}:{i}:{chunk[:80]}".encode(), usedforsecurity=False).hexdigest())
             metas.append({"repo": repo, "file": fname})
         trait_samples.append(extract_traits(content))
     if all_chunks:
         col.upsert(ids=ids, documents=all_chunks,
                    embeddings=embed(all_chunks), metadatas=metas)
     traits = _aggregate_traits(trait_samples)
+    repo_count = len(col.get(where={"repo": repo}, include=[])["ids"])  # this repo only
     with get_db() as db:
         db.execute("DELETE FROM dna_profiles WHERE repo = ?", (repo,))
         db.execute(
             "INSERT INTO dna_profiles (repo, chunk_count, traits_json, updated_at) VALUES (?,?,?,?)",
-            (repo, col.count(), json.dumps(traits), now()),
+            (repo, repo_count, json.dumps(traits), now()),
         )
-    logger.info("DNA ingested: %s chunks, traits=%s", len(all_chunks), traits)
-    return {"chunks_ingested": len(all_chunks), "total_chunks": col.count(), "traits": traits}
+    logger.info("DNA ingested for %s: %s chunks, traits=%s", repo, len(all_chunks), traits)
+    return {"chunks_ingested": len(all_chunks), "repo_chunks": repo_count,
+            "total_chunks": col.count(), "traits": traits}
 
 
 def get_profile(repo: str) -> dict | None:
@@ -157,12 +161,16 @@ def check_violations(repo: str, files: dict[str, str]) -> list[dict]:
     col = _collection()
     profile = get_profile(repo)
     violations: list[dict] = []
+    # Scope the semantic comparison to THIS repo's own history — a single shared
+    # ChromaDB collection holds every repo's chunks, so we must filter by repo or
+    # PRs would be compared against unrelated codebases.
+    repo_count = len(col.get(where={"repo": repo}, include=[])["ids"])
 
     for fname, content in files.items():
         chunks = chunk_code(content) or ([content] if content.strip() else [])
-        if chunks and col.count() > 0:
+        if chunks and repo_count > 0:
             results = col.query(query_embeddings=embed(chunks),
-                                n_results=min(3, col.count()))
+                                n_results=min(3, repo_count), where={"repo": repo})
             for chunk, dists in zip(chunks, results["distances"]):
                 similarity = 1 - min(dists)  # cosine distance -> similarity
                 if similarity < SIMILARITY_THRESHOLD:

@@ -1,0 +1,38 @@
+# Render Blueprint — deploy DevGuardian as a Docker web service.
+# Render injects $PORT automatically; entrypoint.sh binds 0.0.0.0:$PORT and
+# seeds the demo data on first start. Secrets are set in the Render dashboard
+# (sync:false keeps them out of git). Free tier works; data resets on restart
+# unless you add a persistent disk (see the commented block).
+services:
+  - type: web
+    name: devguardian
+    runtime: docker
+    plan: free                 # upgrade to "starter" (512MB+) for snappier ChromaDB
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Leave any of these unset to keep that integration in safe MOCK mode.
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: TEAMS_WEBHOOK_URL
+        sync: false
+      - key: GITHUB_REPO_OWNER
+        sync: false
+      - key: GITHUB_REPO_NAME
+        sync: false
+    # --- Persistence (paid plans only) -------------------------------------
+    # Free instances have ephemeral disk, so the SQLite DB + ChromaDB re-seed
+    # on every restart. For durable data, upgrade the plan and uncomment:
+    # plan: starter
+    # disk:
+    #   name: devguardian-data
+    #   mountPath: /data
+    #   sizeGB: 1
+    # envVars also add:
+    #   - { key: DATABASE_PATH, value: /data/devguardian.db }
+    #   - { key: CHROMA_PATH,   value: /data/.chroma }

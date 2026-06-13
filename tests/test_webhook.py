@@ -6,9 +6,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-import config
-import database
-import seeder
+from app import config, database, seeder
 
 
 @pytest.fixture()
@@ -20,7 +18,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "MOCK_NOTIFIER", True)
     database.init_db()
     seeder.seed()
-    from main import app
+    from app.main import app
     return TestClient(app)
 
 
@@ -70,7 +68,7 @@ def test_blocked_developer_gets_no_ai_review(client):
 
 
 def test_deep_review_finds_planted_bugs(client):
-    resp = client.post("/api/demo/simulate?persona=yogesh&scenario=buggy")
+    resp = client.post("/api/demo/simulate?persona=yogeshgurjar119&scenario=buggy")
     data = resp.json()
     assert data["depth"] == "deep"
     assert data["verdict"] == "request_changes"
@@ -81,7 +79,7 @@ def test_deep_review_finds_planted_bugs(client):
 
 
 def test_shallow_review_for_trusted_developer(client):
-    resp = client.post("/api/demo/simulate?persona=muskan&scenario=clean")
+    resp = client.post("/api/demo/simulate?persona=muskan-3210&scenario=clean")
     data = resp.json()
     assert data["depth"] == "shallow"
     assert data["verdict"] == "approve"
@@ -92,7 +90,7 @@ def test_developers_api_returns_seeded_team(client):
     data = client.get("/api/developers").json()
     assert len(data["developers"]) == 4
     by_user = {d["username"]: d for d in data["developers"]}
-    assert by_user["muskan"]["depth"] == "shallow"
+    assert by_user["muskan-3210"]["depth"] == "shallow"
     assert by_user["sam-iqbal"]["depth"] == "block"
 
 

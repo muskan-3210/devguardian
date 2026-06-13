@@ -14,7 +14,7 @@ import logging
 import re
 import time
 
-import config
+from . import config
 
 logger = logging.getLogger("devguardian.nim")
 
@@ -53,7 +53,8 @@ def _client():
     return OpenAI(base_url=config.NIM_BASE_URL, api_key=config.NVIDIA_API_KEY)
 
 
-def _chat(model: str, system: str, user: str, max_retries: int = 2) -> str:
+def _chat(model: str, system: str, user: str, max_retries: int = 2,
+          max_tokens: int = 2048) -> str:
     """Single chat completion with fallback to Nemotron on rate limit."""
     models = [model, config.MODEL_FALLBACK]
     last_err: Exception | None = None
@@ -67,15 +68,18 @@ def _chat(model: str, system: str, user: str, max_retries: int = 2) -> str:
                         {"role": "user", "content": user},
                     ],
                     temperature=0.2,
-                    max_tokens=2048,
+                    max_tokens=max_tokens,
                 )
                 return resp.choices[0].message.content or ""
-            except Exception as exc:  # 429 / transient — try fallback chain
+            except Exception as exc:
                 last_err = exc
-                if "429" in str(exc):
+                # Only rate-limit (429) errors are retried/failed over; auth (401),
+                # bad-model (404) and other errors fail fast so the real cause is visible.
+                if "429" in str(exc) or "rate limit" in str(exc).lower():
                     logger.warning("Rate limited on %s, retrying/falling back", m)
                     time.sleep(2 * (attempt + 1))
                     continue
+                logger.error("NIM call failed on %s (not rate-limited): %s", m, exc)
                 break
     raise RuntimeError(f"NIM call failed across fallback chain: {last_err}")
 
@@ -171,9 +175,10 @@ def explain_finding(rule_id: str, message: str, code: str) -> str:
                 "code and apply the secure alternative. (mock explanation — add "
                 "NVIDIA_API_KEY for AI-generated guidance)")
     return _chat(
-        config.MODEL_DEEP,
+        config.MODEL_EXPLAIN,
         "Explain this security finding to a developer in 2-3 plain sentences, then give a concrete fix.",
         f"Rule: {rule_id}\nFinding: {message}\nCode:\n{code}",
+        max_tokens=300,
     )
 
 
@@ -188,7 +193,7 @@ def generate_tests(source: str, functions: list[str], framework: str = "pytest")
                       "    raise NotImplementedError", ""]
         return "\n".join(lines)
     return _chat(
-        config.MODEL_DEEP,
+        config.MODEL_TESTGEN,
         f"Write complete, runnable {framework} tests. Respond with code only.",
         f"Untested functions: {', '.join(functions)}\n\nSource:\n{source[:40000]}",
     )

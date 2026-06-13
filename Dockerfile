@@ -7,9 +7,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python seeder.py
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+# Respect $PORT (Render/Cloud Run inject it); fall back to 8000 locally.
+HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import os,urllib.request as u; u.urlopen('http://localhost:%s/health' % os.environ.get('PORT','8000'))"
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Seed-if-empty then launch (see entrypoint.sh) — keeps demo data on the mounted volume.
+CMD ["./entrypoint.sh"]

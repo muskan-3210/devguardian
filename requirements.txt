@@ -1,14 +1,11 @@
-fastapi
-uvicorn[standard]
-requests
-httpx
-chromadb
-semgrep; sys_platform != "win32"
-python-dotenv
-jinja2
-pandas
-pytest
-pytest-asyncio
-python-multipart
-aiofiles
-openai
+# Runtime dependencies only (lean — used for Docker / Render deploys).
+# Version floors are pinned to a tested-compatible set (2026-06-13). The floor on
+# fastapi matters: an older fastapi pulled in an incompatible Starlette and broke startup.
+# For tests/CI and local Semgrep, use requirements-dev.txt.
+fastapi>=0.136
+uvicorn[standard]>=0.44
+requests>=2.31
+httpx>=0.27
+chromadb>=1.5
+python-dotenv>=1.0
+openai>=1.66

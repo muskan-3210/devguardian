@@ -1,5 +1,17 @@
 # DevGuardian — Architecture
 
+## Diagrams
+
+**System architecture**
+
+![DevGuardian system architecture](architecture.png)
+
+**Pull request review flow**
+
+![DevGuardian PR review flow](user_flow.png)
+
+> PNGs generated from the live system; the Mermaid sources below render the same model on GitHub.
+
 ## 1. High-level architecture
 
 ```mermaid

@@ -6,9 +6,9 @@ run as the final check in an Azure/GitHub pipeline before deploy.
 """
 import logging
 
-import nim_client
-import notifier
-from database import get_db
+from . import nim_client
+from . import notifier
+from .database import get_db
 
 logger = logging.getLogger("devguardian.gate")
 

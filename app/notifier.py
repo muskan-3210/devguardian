@@ -8,8 +8,8 @@ import logging
 
 import requests
 
-import config
-from database import audit
+from . import config
+from .database import audit
 
 logger = logging.getLogger("devguardian.notifier")
 
@@ -56,6 +56,7 @@ def notify_blocked_pr(username: str, dts: int, pr_title: str, repo: str) -> None
         f"A pull request was blocked because the author's trust score is below the merge threshold.",
         "critical",
         fields=[
+            {"name": "Author", "value": username},
             {"name": "Repository", "value": repo},
             {"name": "PR", "value": pr_title},
             {"name": "Author DTS", "value": f"{dts} (block < {config.DTS_DEEP_MIN})"},

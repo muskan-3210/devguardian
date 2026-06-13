@@ -9,7 +9,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-import config
+from . import config
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS developers (
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS trust_scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     developer_id INTEGER NOT NULL REFERENCES developers(id),
     score INTEGER NOT NULL,
-    depth TEXT NOT NULL,                          -- shallow | standard | deep | block
+    depth TEXT NOT NULL CHECK (depth IN ('shallow','standard','deep','block')),
     breakdown_json TEXT NOT NULL,                 -- explainable factor contributions
     calculated_at TEXT NOT NULL
 );
@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS pull_requests (
     repo TEXT,
     title TEXT,
     author_id INTEGER REFERENCES developers(id),
-    status TEXT DEFAULT 'open',                   -- open | merged | reverted | blocked
+    status TEXT DEFAULT 'open'
+        CHECK (status IN ('open','merged','reverted','blocked')),
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_pr_author ON pull_requests(author_id);
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     duration_ms INTEGER,
     created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_reviews_pr ON reviews(pr_id);
 
 CREATE TABLE IF NOT EXISTS dna_profiles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +87,7 @@ CREATE TABLE IF NOT EXISTS security_findings (
     line INTEGER,
     message TEXT,
     explanation TEXT,                             -- plain-English AI explanation + fix
-    resolved INTEGER NOT NULL DEFAULT 0,
+    resolved INTEGER NOT NULL DEFAULT 0 CHECK (resolved IN (0, 1)),
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_findings_dev ON security_findings(developer_id, created_at);

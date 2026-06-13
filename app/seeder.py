@@ -1,14 +1,14 @@
 """Seed 4 demo developers with realistic metrics, 12 weeks of DTS history,
 sample PRs, reviews and security findings — everything the dashboard and
-demo flow need. Run: python seeder.py
+demo flow need. Run: python -m app.seeder
 """
 import json
 import random
 from datetime import datetime, timedelta, timezone
 
-import database
-import dts_engine
-from database import get_db
+from . import database
+from . import dts_engine
+from .database import get_db
 
 random.seed(42)  # deterministic demo data
 
@@ -18,10 +18,12 @@ random.seed(42)  # deterministic demo data
 # personas that demonstrate the standard and block bands.
 DEVELOPERS = [
     # username, display, role, months_ago_joined, metrics(bug, revert, coverage, security, accept)
-    ("muskan", "Muskan", "senior engineer", 30, (0.0, 0.00, 15.0, 0, 1.00)),       # 80 shallow
-    ("alex-rivera", "Alex Rivera", "engineer", 14, (0.5, 0.02, 5.0, 0, 0.70)),     # 65 standard
-    ("yogesh", "Yogesh", "engineer", 5, (1.2, 0.10, -2.0, 1, 0.40)),               # 36 deep
-    ("sam-iqbal", "Sam Iqbal", "junior engineer", 3, (2.4, 0.25, -6.0, 3, 0.20)),  # 0 block
+    # muskan-3210 and yogeshgurjar119 are REAL GitHub logins (repo owner + collaborator)
+    # so live PR webhooks resolve to the intended trust band; alex/sam are demo-only personas.
+    ("muskan-3210", "Muskan", "senior engineer", 30, (0.0, 0.00, 15.0, 0, 1.00)),       # 80 shallow
+    ("alex-rivera", "Alex Rivera", "engineer", 14, (0.5, 0.02, 5.0, 0, 0.70)),          # 65 standard
+    ("yogeshgurjar119", "Yogesh", "engineer", 5, (1.2, 0.10, -2.0, 1, 0.40)),           # 36 deep
+    ("sam-iqbal", "Sam Iqbal", "junior engineer", 3, (2.4, 0.25, -6.0, 3, 0.20)),       # 0 block
 ]
 
 SAMPLE_FINDINGS = [

@@ -78,7 +78,9 @@
   <section id="tab-live" class="hidden">
     <div class="card p-5 mb-6">
       <h3 class="font-semibold mb-1">Simulate a Pull Request</h3>
-      <p class="text-xs text-[#605e5c] mb-4">Runs the complete pipeline: trust lookup → depth routing → AI review → DNA check → security scan → test generation.</p>
+      <p class="text-xs text-[#605e5c] mb-1">Runs the complete pipeline: trust lookup → depth routing → AI review → DNA check → security scan → test generation.</p>
+      <p class="text-xs mb-4 flex items-start gap-1.5" style="color:#986f0b">
+        <span>ℹ️</span><span><b>Offline demo</b> — reviews a bundled sample diff with the live AI pipeline and saves the result here. It does <b>not</b> open or comment on a real GitHub PR (that happens automatically via the webhook when a real PR is raised).</span></p>
       <div class="flex flex-wrap gap-3 items-center">
         <select id="persona" class="bg-white border border-[#8a8886] rounded px-3 py-2 text-sm w-full sm:w-auto"></select>
         <select id="scenario" class="bg-white border border-[#8a8886] rounded px-3 py-2 text-sm w-full sm:w-auto">
@@ -91,7 +93,10 @@
     </div>
     <div id="simResult" class="space-y-4"></div>
     <div class="card p-5 mt-6">
-      <h3 class="font-semibold mb-3">Recent AI Reviews</h3>
+      <h3 class="font-semibold mb-3 flex items-center gap-2">Recent AI Reviews
+        <span id="liveStamp" class="text-[10px] font-normal text-[#107c10] flex items-center gap-1">
+          <span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-[#7fba00]"></span>live</span>
+      </h3>
       <div id="reviewList" class="space-y-2 text-sm"></div>
     </div>
   </section>
@@ -103,10 +108,17 @@
       <div class="card p-5 lg:col-span-2"><h3 class="font-semibold mb-3">Risk Heatmap — Hotspot Files</h3><div id="heatmap" class="space-y-2"></div></div>
     </div>
     <div class="card p-5">
-      <h3 class="font-semibold mb-3">Security Findings</h3>
+      <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+        <h3 class="font-semibold">Security Findings</h3>
+        <label class="text-xs text-[#605e5c] flex items-center gap-2">Repository
+          <select id="repoFilter" onchange="loadFindings()" class="bg-white border border-[#8a8886] rounded px-2 py-1 text-xs">
+            <option value="">All repositories</option>
+          </select>
+        </label>
+      </div>
       <div class="overflow-x-auto"><table class="w-full min-w-[640px] text-sm">
         <thead><tr class="text-left text-[#605e5c] border-b border-[#edebe9]">
-          <th class="py-2 pr-4">Severity</th><th class="py-2 pr-4">Rule</th><th class="py-2 pr-4">Location</th><th class="py-2 pr-4">Explanation</th><th class="py-2">Status</th>
+          <th class="py-2 pr-4">Severity</th><th class="py-2 pr-4">Repo / PR</th><th class="py-2 pr-4">Rule</th><th class="py-2 pr-4">Location</th><th class="py-2 pr-4">Explanation</th><th class="py-2">Status</th>
         </tr></thead>
         <tbody id="findingsBody"></tbody>
       </table></div>
@@ -200,7 +212,7 @@ async function loadDevelopers() {
   const sel = $('#persona');
   sel.innerHTML = developers.map(d =>
     `<option value="${d.username}">${d.display_name} (DTS ${d.dts} → ${d.depth})</option>`).join('');
-  sel.value = 'yogesh';
+  if (developers.some(d => d.username === 'yogeshgurjar119')) sel.value = 'yogeshgurjar119';
   drawTrend();
 }
 
@@ -283,7 +295,8 @@ async function loadReviews() {
     const [, badge, label] = depthStyle[r.depth] || depthStyle.standard;
     return `<div class="flex items-center gap-x-3 gap-y-1 flex-wrap border-b border-[#f3f2f1] py-2">
       <span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${badge}">${label}</span>
-      <span class="truncate max-w-[55vw] sm:max-w-none">${r.title||'—'}</span><span class="text-[#a19f9d] text-xs">${r.author||''}</span>
+      ${r.repo?`<span class="px-1.5 py-0.5 rounded text-[10px] bg-[#eff6fc] text-[#005a9e] font-medium">${r.repo}</span>`:''}
+      <span class="truncate max-w-[45vw] sm:max-w-none">${r.title||'—'}</span><span class="text-[#a19f9d] text-xs">${r.author||''}</span>
       <span class="sm:ml-auto text-xs text-[#a19f9d] w-full sm:w-auto">${r.findings.length} findings · ${r.duration_ms} ms · ${r.verdict}</span>
     </div>`;
   }).join('') || '<p class="text-[#a19f9d] text-xs">No reviews yet.</p>';
@@ -291,16 +304,28 @@ async function loadReviews() {
 
 async function loadFindings() {
   const data = await api('/api/findings');
-  $('#findingsBody').innerHTML = data.findings.map(f => `
+  // Populate the repo filter from the findings, preserving the current choice.
+  const repos = [...new Set(data.findings.map(f => f.repo).filter(Boolean))].sort();
+  const repoSel = $('#repoFilter');
+  if (repoSel) {
+    const cur = repoSel.value;
+    repoSel.innerHTML = '<option value="">All repositories</option>' +
+      repos.map(r => `<option value="${r}">${r}</option>`).join('');
+    if (repos.includes(cur)) repoSel.value = cur;
+  }
+  const pick = repoSel ? repoSel.value : '';
+  const findings = pick ? data.findings.filter(f => f.repo === pick) : data.findings;
+  $('#findingsBody').innerHTML = findings.map(f => `
     <tr class="border-b border-[#f3f2f1]">
       <td class="py-2 pr-4"><span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="${sevStyle[f.severity]||sevStyle.LOW}">${f.severity}</span></td>
+      <td class="py-2 pr-4 text-xs">${f.repo?`<span class="px-1.5 py-0.5 rounded bg-[#eff6fc] text-[#005a9e] font-medium">${f.repo}</span>${f.pr_number?` <span class="text-[#a19f9d]">#${f.pr_number}</span>`:''}`:'<span class="text-[#a19f9d]">—</span>'}</td>
       <td class="py-2 pr-4 font-mono text-xs">${f.rule_id}</td>
       <td class="py-2 pr-4 font-mono text-xs">${f.file}:${f.line}</td>
       <td class="py-2 pr-4 text-xs text-[#605e5c] max-w-md">${f.explanation||f.message}</td>
       <td class="py-2 text-xs">${f.resolved?'<span style="color:#107c10">resolved</span>':'<span style="color:#986f0b">open</span>'}</td>
     </tr>`).join('');
   const counts = {CRITICAL:0,HIGH:0,MEDIUM:0,LOW:0};
-  data.findings.forEach(f => counts[f.severity] = (counts[f.severity]||0)+1);
+  findings.forEach(f => counts[f.severity] = (counts[f.severity]||0)+1);
   if (sevChart) sevChart.destroy();
   sevChart = new Chart($('#sevChart'), { type:'doughnut',
     data:{ labels:Object.keys(counts), datasets:[{ data:Object.values(counts),
@@ -308,7 +333,7 @@ async function loadFindings() {
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{color:'#323130',boxWidth:12}}} } });
   const byFile = {};
-  data.findings.forEach(f => byFile[f.file] = (byFile[f.file]||0)+1);
+  findings.forEach(f => byFile[f.file] = (byFile[f.file]||0)+1);
   const max = Math.max(1, ...Object.values(byFile));
   $('#heatmap').innerHTML = Object.entries(byFile).sort((a,b)=>b[1]-a[1]).map(([file,n]) => `
     <div class="flex items-center gap-3 text-xs">
@@ -362,6 +387,23 @@ async function loadGate() {
 }
 
 loadDevelopers(); loadReviews(); loadFindings(); loadDNA();
+
+// --- Real-time refresh: new PR reviews (with repo + author) appear automatically ---
+function activeTab() {
+  const b = document.querySelector('.tab.tab-active');
+  return b ? b.dataset.tab : 'overview';
+}
+async function refreshLive() {
+  if (document.hidden) return;                  // skip when the tab is backgrounded
+  try {
+    await loadReviews();                        // live feed: repo · title · author · verdict
+    if (activeTab() === 'security') await loadFindings();
+    const el = $('#liveStamp');
+    if (el) el.innerHTML =
+      `<span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-[#7fba00]"></span>live · ${new Date().toLocaleTimeString()}`;
+  } catch (e) { /* transient API hiccup — next tick retries */ }
+}
+setInterval(refreshLive, 5000);
 </script>
 </body>
 </html>
